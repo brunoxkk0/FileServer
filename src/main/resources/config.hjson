@@ -1,0 +1,61 @@
+{
+  router:{
+    routes: [
+      {
+        "route":"path/to/route",
+        "mode":"BOTH",
+        "rule": [
+          {
+            "ruleType":"auth",
+            "authHandler": "Basic",
+            "arguments": {
+              "passwdFile":"/caminho/para/.htpasswd"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  security-handler:{
+    /*
+     *  Define a política case não encontre o handler esperado.
+     *  A política pode ter 2 valores, 'restrict' para bloquear ou 'ignore' para ignorar a necessidade de autenticação.
+     *  ! Recommended value 'restrict' !
+     */
+     missingBehavior: restrict
+
+    /*
+     * Define a lista dos handlers que serão usados.
+     */
+     handlers: [
+    /*
+    {
+      #Basedo no nome, as rotas buscaram seu meio de fazer auth.
+      "name":"basicAuth",
+      "description":"Default simple authentication method",
+      # Login, password method
+      "method": "basic",
+      "key": {
+        # A partir deste arquivo definido na path, buscar a chave para fazer o login
+        "path": "/path/to/auth.key",
+        # A chave pode estar em md5 | sha1 | plain
+         "hashing": "md5"
+      }
+    },
+    */
+      {
+        #Basedo no nome, as rotas buscaram seu meio de fazer auth.
+        "name": "basicAuth",
+        "description": "Default simple authentication method",
+        # Login, password method
+        "method": "basic",
+        "key": {
+          # A partir deste arquivo definido na path, buscar a chave para fazer o login
+          "path": "/path/to/auth.key",
+          # A chave pode estar em md5 | sha1 | plain
+          "hashing": "md5"
+        }
+      }
+    ]
+  }
+}
