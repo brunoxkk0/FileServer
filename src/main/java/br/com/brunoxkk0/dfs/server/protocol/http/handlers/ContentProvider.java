@@ -1,5 +1,6 @@
 package br.com.brunoxkk0.dfs.server.protocol.http.handlers;
 
+import br.com.brunoxkk0.dfs.server.ClientConfigHolder;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.Header;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.Target;
@@ -10,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 import java.io.*;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
@@ -36,9 +38,12 @@ public class ContentProvider {
         if(path.startsWith("/"))
             path = path.substring(1);
 
-        File file = new File(path);
+        String decodedPath = URLDecoder.decode(path, DEFAULT_SERVER_CHARSET);
 
-        if(!file.exists()){
+        File file = new File(decodedPath);
+        String fileExtension = fileExtension(file);
+
+        if(!file.exists() || fileExtension == null){
 
             StatusReply.builder()
                     .status(HTTPStatus.NotFound)
@@ -47,16 +52,16 @@ public class ContentProvider {
 
             if(!parameters.isKeepAlive()){
                 outputStream.close();
-                return;
             }
 
+            return;
         }
 
         httpHeader.append(PROTOCOL, HTTPStatus.Ok, LINE_BREAK);
         httpHeader.append("Date:", new Date(), LINE_BREAK);
         httpHeader.append("Server:", SERVICE_NAME, LINE_BREAK);
 
-        String Mime = MIMEType.of(fileExtension(file));
+        String Mime = MIMEType.of(fileExtension);
 
         if(Mime.startsWith("text") && FORCE_CHARSET_WHEN_TEXT)
             Mime += "; charset=" + DEFAULT_SERVER_CHARSET + " ";
@@ -97,7 +102,11 @@ public class ContentProvider {
 
     public String fileExtension(File file){
         int index = file.getName().lastIndexOf(".");
-        return file.getName().substring(index);
+
+        if(index != -1)
+            return file.getName().substring(index);
+
+        return null;
     }
 
 

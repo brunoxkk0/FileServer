@@ -24,7 +24,7 @@ public class HeaderParameters {
 
         HeaderParameters headerParameters = new HeaderParameters();
 
-        Arrays.asList(source.split("\\r\\n")).forEach(line -> {
+        source.lines().forEach(line -> {
             if(line.contains(":")){
                 String[] parts = line.split(":", 2);
                 headerParameters.parameters.put(parts[0], parts[1]);
