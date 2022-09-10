@@ -1,8 +1,9 @@
 package br.com.brunoxkk0.dfs.server.protocol.http.handlers;
 
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HTTPHeader;
+import br.com.brunoxkk0.dfs.server.protocol.http.core.Header;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.MIMEType;
+import lombok.AllArgsConstructor;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -11,20 +12,16 @@ import java.nio.charset.StandardCharsets;
 import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.lineBreak;
 import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.protocol;
 
-
-public class HTTPStatusReply {
+@AllArgsConstructor
+public class StatusReply {
 
     private final HTTPStatus status;
 
-    private HTTPStatusReply(HTTPStatus status){
-        this.status = status;
-    }
-
     public void execute(BufferedOutputStream outputStream) throws IOException {
-        dispatch(outputStream, HTTPHeader.create(), status);
+        dispatch(outputStream, Header.builder().build(), status);
     }
 
-    private void dispatch(BufferedOutputStream outputStream, HTTPHeader httpHeader, HTTPStatus status) throws IOException {
+    private void dispatch(BufferedOutputStream outputStream, Header httpHeader, HTTPStatus status) throws IOException {
 
         byte[] data = ("<h1> " + status + " </h1> ").getBytes(StandardCharsets.UTF_8);
 
@@ -41,7 +38,7 @@ public class HTTPStatusReply {
         outputStream.flush();
     }
 
-    public static HTTPStatusReply of(HTTPStatus status){
-        return new HTTPStatusReply(status);
+    public static StatusReply of(HTTPStatus status){
+        return new StatusReply(status);
     }
 }

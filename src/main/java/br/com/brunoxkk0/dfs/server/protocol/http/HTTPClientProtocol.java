@@ -1,12 +1,12 @@
 package br.com.brunoxkk0.dfs.server.protocol.http;
 
 import br.com.brunoxkk0.dfs.server.protocol.Protocol;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HTTPHeaderParameters;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HTTPTarget;
-import br.com.brunoxkk0.dfs.server.protocol.http.handlers.HTTPStatusReply;
-import br.com.brunoxkk0.dfs.server.protocol.http.methods.HTTPGetHandler;
-import br.com.brunoxkk0.dfs.server.protocol.http.methods.HTTPHeadHandler;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HTTPReceivedContent;
+import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
+import br.com.brunoxkk0.dfs.server.protocol.http.core.Target;
+import br.com.brunoxkk0.dfs.server.protocol.http.handlers.StatusReply;
+import br.com.brunoxkk0.dfs.server.protocol.http.methods.GETHandler;
+import br.com.brunoxkk0.dfs.server.protocol.http.methods.HEADHandler;
+import br.com.brunoxkk0.dfs.server.protocol.http.core.ReceivedContent;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
 import br.com.brunoxkk0.dfs.server.tcp.Server;
 import br.com.brunoxkk0.dfs.server.tcp.SocketClient;
@@ -51,44 +51,44 @@ public class HTTPClientProtocol implements Protocol {
             if(linkedList.isEmpty()){
 
                 if(socketClient.isConnected())
-                    HTTPStatusReply.of(HTTPStatus.InternalServerError).execute(outputStream);
+                    StatusReply.of(HTTPStatus.InternalServerError).execute(outputStream);
 
                 socketClient.close();
                 return;
             }
 
-            HTTPTarget httpTarget = HTTPTarget.of(linkedList.get(0));
-            HTTPHeaderParameters httpHeaderParameters = HTTPHeaderParameters.of(linkedList);
+            Target target = Target.of(linkedList.get(0));
+            HeaderParameters headerParameters = HeaderParameters.of(linkedList);
 
             logger.info("+---");
-            logger.info("| Method: "            + httpTarget.getMethod());
-            logger.info("| Path: "              + httpTarget.getPath());
-            logger.info("| Protocol Version: "  + httpTarget.getVersion());
-            logger.info("| Parameters: "        + httpTarget.getParameters());
+            logger.info("| Method: "            + target.getMethod());
+            logger.info("| Path: "              + target.getPath());
+            logger.info("| Protocol Version: "  + target.getVersion());
+            logger.info("| Parameters: "        + target.getParameters());
             logger.info("+---");
 
             if(debug){
                 logger.info("+--- Header Parameters");
-                httpHeaderParameters.getMap().forEach(
+                headerParameters.getParameters().forEach(
                         (key, value) -> logger.info("|  " + key + ": " + value)
                 );
                 logger.info("+---");
             }
 
-            HTTPReceivedContent httpReceivedContent = null;
+            ReceivedContent receivedContent = null;
 
             receiveContent: {
 
-                if(!httpTarget.getMethodEnum().receiveContent())
+                if(!target.getMethodEnum().receiveContent())
                     break receiveContent;
 
-                int length = Integer.parseInt(httpHeaderParameters.getMap().getOrDefault("Content-Length", "-1"));
+                int length = Integer.parseInt(headerParameters.getParameters().getOrDefault("Content-Length", "-1"));
 
                 if(length > 0){
 
                     if(length > maxReadSize){
                         logger.warn(String.format(" ! Request content size is too large [Max: %d | Received: %d]", maxReadSize, length));
-                        HTTPStatusReply.of(HTTPStatus.PayloadTooLarge).execute(outputStream);
+                        StatusReply.of(HTTPStatus.PayloadTooLarge).execute(outputStream);
                         socketClient.close();
                         return;
                     }
@@ -111,30 +111,30 @@ public class HTTPClientProtocol implements Protocol {
 
                     logger.info(" ! Read " + read + " bytes");
 
-                    httpReceivedContent = new HTTPReceivedContent(
+                    receivedContent = new ReceivedContent(
                             byteArrayOutputStream,
-                            httpHeaderParameters.getMap().get("Content-Type"),
-                            httpHeaderParameters.getMap().get("Content-Disposition")
+                            headerParameters.getParameters().get("Content-Type"),
+                            headerParameters.getParameters().get("Content-Disposition")
                     );
 
                 }
 
-                if(httpReceivedContent != null){
-                    logger.info(" ! Received Content: " + httpReceivedContent);
+                if(receivedContent != null){
+                    logger.info(" ! Received Content: " + receivedContent);
                 }
 
             }
 
-            socketClient.getSocket().setKeepAlive(httpHeaderParameters.isKeepAlive());
+            socketClient.getSocket().setKeepAlive(headerParameters.isKeepAlive());
 
-            switch (httpTarget.getMethodEnum()){
+            switch (target.getMethodEnum()){
 
-                case GET -> HTTPGetHandler.of(httpTarget, httpHeaderParameters).execute(outputStream);
-                case HEAD -> HTTPHeadHandler.of(httpTarget, httpHeaderParameters).execute(outputStream);
+                case GET -> GETHandler.of(target, headerParameters).execute(outputStream);
+                case HEAD -> HEADHandler.of(target, headerParameters).execute(outputStream);
 
                 default -> {
 
-                    HTTPStatusReply.of(HTTPStatus.NotImplemented).execute(outputStream);
+                    StatusReply.of(HTTPStatus.NotImplemented).execute(outputStream);
                     socketClient.close();
                     return;
                 }
@@ -143,7 +143,7 @@ public class HTTPClientProtocol implements Protocol {
 
             outputStream.flush();
 
-            if(!httpHeaderParameters.isKeepAlive()){
+            if(!headerParameters.isKeepAlive()){
                 socketClient.close();
             }
 

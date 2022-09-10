@@ -1,47 +1,51 @@
 package br.com.brunoxkk0.dfs.server.protocol.http.core;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-public class HTTPHeaderParameters {
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@ToString
+public class HeaderParameters {
 
+    @Getter
     private final HashMap<String,String> parameters = new HashMap<>();
-
-    public HashMap<String, String> getMap() {
-        return parameters;
-    }
 
     public boolean isKeepAlive(){
         return parameters.getOrDefault("Connection", "null").equals("keep-alive");
     }
 
-    public static HTTPHeaderParameters of(String source){
+    public static HeaderParameters of(String source){
 
-        HTTPHeaderParameters httpHeaderParameters = new HTTPHeaderParameters();
+        HeaderParameters headerParameters = new HeaderParameters();
 
         Arrays.asList(source.split("\\r\\n")).forEach(line -> {
             if(line.contains(":")){
                 String[] parts = line.split(":", 2);
-                httpHeaderParameters.parameters.put(parts[0], parts[1]);
+                headerParameters.parameters.put(parts[0], parts[1]);
             }
         });
 
-        return httpHeaderParameters;
+        return headerParameters;
     }
 
-    public static HTTPHeaderParameters of(List<String> source){
+    public static HeaderParameters of(List<String> source){
 
-        HTTPHeaderParameters httpHeaderParameters = new HTTPHeaderParameters();
+        HeaderParameters headerParameters = new HeaderParameters();
 
         source.forEach(line -> {
             if(line.contains(":")){
                 String[] parts = line.split(":", 2);
-                httpHeaderParameters.parameters.put(parts[0], parts[1].trim());
+                headerParameters.parameters.put(parts[0], parts[1].trim());
             }
         });
 
-        return httpHeaderParameters;
+        return headerParameters;
     }
 
 }

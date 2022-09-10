@@ -1,16 +1,16 @@
 package br.com.brunoxkk0.dfs.server.protocol.http.core;
 
+import lombok.*;
+
 import java.util.LinkedList;
 
-public class HTTPHeader {
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
+@ToString
+public class Header {
 
-    private HTTPHeader(){}
-
-    public static HTTPHeader create(){
-        return new HTTPHeader();
-    }
-
-    private final LinkedList<String> list = new LinkedList<>();
+    @Getter()
+    private final LinkedList<String> lines = new LinkedList<>();
 
     public void append(Object ... data){
 
@@ -23,14 +23,11 @@ public class HTTPHeader {
             str.append(data[i].toString());
         }
 
-        list.add(str.toString());
+        lines.add(str.toString());
     }
 
     public void append(String data){
-        list.add(data);
+        lines.add(data);
     }
 
-    public LinkedList<String> getLines() {
-        return list;
-    }
 }

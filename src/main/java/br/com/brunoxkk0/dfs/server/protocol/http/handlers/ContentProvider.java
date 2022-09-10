@@ -1,11 +1,13 @@
 package br.com.brunoxkk0.dfs.server.protocol.http.handlers;
 
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HTTPHeader;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HTTPHeaderParameters;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HTTPTarget;
+import br.com.brunoxkk0.dfs.server.protocol.http.core.Header;
+import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
+import br.com.brunoxkk0.dfs.server.protocol.http.core.Target;
 import br.com.brunoxkk0.dfs.server.protocol.http.methods.HTTPMethods;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.MIMEType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -13,49 +15,17 @@ import java.util.Date;
 
 import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.*;
 
-public class HTTPContentProvider {
+@AllArgsConstructor
+@Builder
+public class ContentProvider {
 
-    private final HTTPTarget target;
-    private final HTTPHeaderParameters parameters;
+    private final Target target;
+    private final HeaderParameters parameters;
 
-    private HTTPContentProvider(HTTPTarget target, HTTPHeaderParameters parameters){
-        this.target = target;
-        this.parameters = parameters;
-    }
 
-    public static ProviderBuilder of(){
-        return new ProviderBuilder();
-    }
-
-    public static class ProviderBuilder{
-
-        private ProviderBuilder(){}
-
-        private HTTPTarget target;
-        private HTTPHeaderParameters parameters;
-
-        public ProviderBuilder target(HTTPTarget target){
-            this.target = target;
-            return this;
-        }
-
-        public ProviderBuilder parameters(HTTPHeaderParameters headerParameters){
-            this.parameters = headerParameters;
-            return this;
-        }
-
-        public HTTPContentProvider build(){
-            return new HTTPContentProvider(target, parameters);
-        }
-
-    }
-
-    /*
-        TODO: Auth
-    */
     public void provide(BufferedOutputStream outputStream) throws IOException {
 
-        HTTPHeader httpHeader = HTTPHeader.create();
+        Header httpHeader = Header.builder().build();
 
         String path = sourceFolder;
 
@@ -71,7 +41,7 @@ public class HTTPContentProvider {
 
         if(!file.exists()){
 
-            HTTPStatusReply.of(HTTPStatus.NotFound).execute(outputStream);
+            StatusReply.of(HTTPStatus.NotFound).execute(outputStream);
 
             if(!parameters.isKeepAlive()){
                 outputStream.close();

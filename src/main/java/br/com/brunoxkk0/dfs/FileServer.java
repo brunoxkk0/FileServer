@@ -8,12 +8,7 @@ public class FileServer {
         Server server = new Server("25565");
         server.createServer();
         Thread thread = new Thread(server);
-        thread.setDaemon(true);
         thread.start();
-
-        while(!thread.isInterrupted()){
-            ;;
-        }
 
     }
 
