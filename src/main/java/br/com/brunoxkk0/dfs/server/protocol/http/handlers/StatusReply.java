@@ -4,15 +4,17 @@ import br.com.brunoxkk0.dfs.server.protocol.http.core.Header;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.MIMEType;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.lineBreak;
-import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.protocol;
+import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.LINE_BREAK;
+import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.PROTOCOL;
 
 @AllArgsConstructor
+@Builder()
 public class StatusReply {
 
     private final HTTPStatus status;
@@ -25,10 +27,10 @@ public class StatusReply {
 
         byte[] data = ("<h1> " + status + " </h1> ").getBytes(StandardCharsets.UTF_8);
 
-        httpHeader.append(protocol + " " + status + lineBreak);
-        httpHeader.append("Content-Length: " + data.length + " " + lineBreak);
-        httpHeader.append("Content-Type: " + MIMEType.of("html") + "; charset=utf-8 " + lineBreak);
-        httpHeader.append(lineBreak);
+        httpHeader.append(PROTOCOL + " " + status + LINE_BREAK);
+        httpHeader.append("Content-Length: " + data.length + " " + LINE_BREAK);
+        httpHeader.append("Content-Type: " + MIMEType.of("html") + "; charset=utf-8 " + LINE_BREAK);
+        httpHeader.append(LINE_BREAK);
 
         for(String line : httpHeader.getLines()){
             outputStream.write(line.getBytes(StandardCharsets.UTF_8));
@@ -36,9 +38,5 @@ public class StatusReply {
 
         outputStream.write(data);
         outputStream.flush();
-    }
-
-    public static StatusReply of(HTTPStatus status){
-        return new StatusReply(status);
     }
 }

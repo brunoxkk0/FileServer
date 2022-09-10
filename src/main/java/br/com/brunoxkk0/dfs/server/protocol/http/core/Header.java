@@ -9,7 +9,7 @@ import java.util.LinkedList;
 @ToString
 public class Header {
 
-    @Getter()
+    @Getter
     private final LinkedList<String> lines = new LinkedList<>();
 
     public void append(Object ... data){

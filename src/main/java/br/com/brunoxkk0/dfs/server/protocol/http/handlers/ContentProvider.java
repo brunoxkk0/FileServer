@@ -22,7 +22,6 @@ public class ContentProvider {
     private final Target target;
     private final HeaderParameters parameters;
 
-
     public void provide(BufferedOutputStream outputStream) throws IOException {
 
         Header httpHeader = Header.builder().build();
@@ -41,50 +40,57 @@ public class ContentProvider {
 
         if(!file.exists()){
 
-            StatusReply.of(HTTPStatus.NotFound).execute(outputStream);
+            StatusReply.builder()
+                    .status(HTTPStatus.NotFound)
+                    .build()
+                    .execute(outputStream);
 
             if(!parameters.isKeepAlive()){
                 outputStream.close();
+                return;
             }
+
         }
 
-        httpHeader.append(protocol, HTTPStatus.Ok, lineBreak);
-        httpHeader.append("Date:", new Date(), lineBreak);
-        httpHeader.append("Server:", serviceName, lineBreak);
+        httpHeader.append(PROTOCOL, HTTPStatus.Ok, LINE_BREAK);
+        httpHeader.append("Date:", new Date(), LINE_BREAK);
+        httpHeader.append("Server:", SERVICE_NAME, LINE_BREAK);
 
         String Mime = MIMEType.of(fileExtension(file));
 
-        if(Mime.startsWith("text") && forceCharsetWhenText)
-            Mime += "; charset=" + StandardCharsets.UTF_8.name().toLowerCase() + " ";
+        if(Mime.startsWith("text") && FORCE_CHARSET_WHEN_TEXT)
+            Mime += "; charset=" + DEFAULT_SERVER_CHARSET + " ";
 
-        httpHeader.append("Content-Type:", Mime, lineBreak);
-        httpHeader.append("Content-Length:", file.length(), lineBreak);
-        httpHeader.append(lineBreak);
+        httpHeader.append("Content-Type:", Mime, LINE_BREAK);
+        httpHeader.append("Content-Length:", file.length(), LINE_BREAK);
+        httpHeader.append(LINE_BREAK);
 
         for(String line : httpHeader.getLines()){
             outputStream.write(line.getBytes(StandardCharsets.UTF_8));
         }
 
-        sendFile: {
-
-            if(target.getMethodEnum() != HTTPMethods.GET)
-                break sendFile;
-
-            byte[] buffer = new byte[BUFFER_SIZE];
-            BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file));
-
-            int n;
-            while ((n = bufferedInputStream.read(buffer)) > 0){
-                outputStream.write(buffer, 0, n);
-            }
-
-            bufferedInputStream.close();
-        }
+        sendFile(outputStream, file);
 
         outputStream.flush();
 
         if(!parameters.isKeepAlive()){
             outputStream.close();
+        }
+
+    }
+
+    private void sendFile(BufferedOutputStream outputStream, File file) throws IOException {
+
+        if(target.getMethodEnum() != HTTPMethods.GET)
+            return;
+
+        try(BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file))){
+            byte[] buffer = new byte[BUFFER_SIZE];
+
+            int n;
+            while ((n = bufferedInputStream.read(buffer)) > 0){
+                outputStream.write(buffer, 0, n);
+            }
         }
 
     }
