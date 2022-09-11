@@ -66,7 +66,7 @@ public class ContentProvider implements SocketWriter {
         String Mime = MIMEType.of(fileExtension);
 
         if(Mime.startsWith("text") && FORCE_CHARSET_WHEN_TEXT)
-            Mime += "; charset=" + DEFAULT_SERVER_CHARSET + " ";
+            Mime += "; charset=" + DEFAULT_SERVER_CHARSET;
 
         httpHeader.append("Content-Type:", Mime, LINE_BREAK);
         httpHeader.append("Content-Length:", file.length(), LINE_BREAK);

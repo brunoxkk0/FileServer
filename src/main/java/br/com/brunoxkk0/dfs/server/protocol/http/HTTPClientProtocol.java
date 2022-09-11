@@ -25,6 +25,7 @@ import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.*;
 public class HTTPClientProtocol implements Protocol {
 
     private final Queue<SocketWriter> toWrite = new LinkedList<>();
+    private boolean isKeepAlive;
 
     @Override
     public String getName() {
@@ -57,12 +58,15 @@ public class HTTPClientProtocol implements Protocol {
                     .build();
 
             toWrite.add(statusReply);
+            isKeepAlive = false;
             return;
 
         }
 
         Target target = Target.of(inputContent.get(0));
         HeaderParameters headerParameters = HeaderParameters.of(inputContent);
+
+        isKeepAlive = headerParameters.isKeepAlive();
 
         Logger logger = Server.getInstance().getLogger();
         logTarget(logger, target);
@@ -128,12 +132,17 @@ public class HTTPClientProtocol implements Protocol {
     }
 
     @Override
+    @SneakyThrows
     public void write(SocketChannel socketChannel) {
 
         SocketWriter socketWriter = toWrite.poll();
 
         if(socketWriter != null){
             socketWriter.write(socketChannel);
+        }
+
+        if(!isKeepAlive){
+            socketChannel.close();
         }
 
     }

@@ -20,5 +20,4 @@ public interface SocketClient<T extends Protocol>{
 
     void write(SocketChannel socketChannel);
 
-
 }

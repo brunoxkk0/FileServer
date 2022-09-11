@@ -46,14 +46,15 @@ public class Server{
 
         selector = Selector.open();
 
-            ServerSocketChannel serverChannel = ServerSocketChannel.open();
+        try (ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
+
             serverChannel.configureBlocking(false);
             serverChannel.socket().bind(address);
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
             logger.info("Server was bind on port: " + address.getPort());
 
-            while (serverChannel.isOpen()){
+            while (serverChannel.isOpen()) {
 
                 int readyCount = selector.select();
                 if (readyCount == 0) {
@@ -73,16 +74,21 @@ public class Server{
                         continue;
                     }
 
-                    if (key.isAcceptable()) { // Accept client connections
+                    if (key.isAcceptable()) {
                         acceptClient(key);
-                    } else if (key.isReadable()) { // Read from client
+                    } else if (key.isReadable()) {
                         readClient(key);
-                        writeClient(key);
                     } else if (key.isWritable()) {
+                        writeClient(key);
+                    }
+
+                    if(!key.channel().isOpen()){
+                        if(key.attachment() != null)
+                            connectedClients.remove((UUID) key.attachment());
                     }
                 }
             }
-
+        }
     }
 
     @SneakyThrows
@@ -133,6 +139,8 @@ public class Server{
                 client.read(byteArrayOutputStream);
             }
         }
+
+        key.interestOps(SelectionKey.OP_WRITE);
     }
 
     @SneakyThrows
@@ -149,6 +157,8 @@ public class Server{
                 client.write(channel);
             }
         }
+
+        key.interestOps(SelectionKey.OP_READ);
     }
 
 }
