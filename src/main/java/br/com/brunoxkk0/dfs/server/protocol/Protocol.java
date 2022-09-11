@@ -1,11 +1,14 @@
 package br.com.brunoxkk0.dfs.server.protocol;
 
-import br.com.brunoxkk0.dfs.server.tcp.SocketClient;
+import java.io.ByteArrayOutputStream;
+import java.nio.channels.SocketChannel;
 
 public interface Protocol {
 
     String getName();
 
-    void run(SocketClient socketClient);
+    void read(ByteArrayOutputStream byteArrayOutputStream);
+
+    void write(SocketChannel socketChannel);
 
 }

@@ -1,6 +1,5 @@
 package br.com.brunoxkk0.dfs.server.protocol.http.handlers;
 
-import br.com.brunoxkk0.dfs.server.ClientConfigHolder;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.Header;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.Target;
@@ -9,9 +8,12 @@ import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.MIMEType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.SneakyThrows;
 
 import java.io.*;
 import java.net.URLDecoder;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
@@ -19,12 +21,12 @@ import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.*;
 
 @AllArgsConstructor
 @Builder
-public class ContentProvider {
+public class ContentProvider implements SocketWriter {
 
     private final Target target;
     private final HeaderParameters parameters;
 
-    public void provide(BufferedOutputStream outputStream) throws IOException {
+    public void provide(SocketChannel socketChannel) throws IOException {
 
         Header httpHeader = Header.builder().build();
 
@@ -48,10 +50,10 @@ public class ContentProvider {
             StatusReply.builder()
                     .status(HTTPStatus.NotFound)
                     .build()
-                    .execute(outputStream);
+                    .write(socketChannel);
 
             if(!parameters.isKeepAlive()){
-                outputStream.close();
+                socketChannel.close();
             }
 
             return;
@@ -71,30 +73,30 @@ public class ContentProvider {
         httpHeader.append(LINE_BREAK);
 
         for(String line : httpHeader.getLines()){
-            outputStream.write(line.getBytes(StandardCharsets.UTF_8));
+            socketChannel.write(ByteBuffer.wrap(line.getBytes(StandardCharsets.UTF_8)));
         }
 
-        sendFile(outputStream, file);
-
-        outputStream.flush();
+        sendFile(socketChannel, file);
 
         if(!parameters.isKeepAlive()){
-            outputStream.close();
+            socketChannel.close();
         }
 
     }
 
-    private void sendFile(BufferedOutputStream outputStream, File file) throws IOException {
+    private void sendFile(SocketChannel outputStream, File file) throws IOException {
 
         if(target.getMethodEnum() != HTTPMethods.GET)
             return;
 
         try(BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file))){
+
             byte[] buffer = new byte[BUFFER_SIZE];
 
             int n;
             while ((n = bufferedInputStream.read(buffer)) > 0){
-                outputStream.write(buffer, 0, n);
+                ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0 , n);
+                outputStream.write(byteBuffer);
             }
         }
 
@@ -110,4 +112,9 @@ public class ContentProvider {
     }
 
 
+    @Override
+    @SneakyThrows
+    public void write(SocketChannel socketChannel) {
+        provide(socketChannel);
+    }
 }

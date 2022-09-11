@@ -1,25 +1,24 @@
 package br.com.brunoxkk0.dfs.server.tcp;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.Socket;
+import br.com.brunoxkk0.dfs.server.protocol.Protocol;
+
+import java.io.ByteArrayOutputStream;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
-public interface SocketClient extends Runnable{
+public interface SocketClient<T extends Protocol>{
 
     UUID getUUID();
 
-    InputStream getInputStream() throws IOException;
+    SocketAddress getSocketAddress();
 
-    OutputStream getOutputStream() throws IOException;
+    T getProtocol();
 
-    boolean isConnected();
+    void read(ByteArrayOutputStream readData);
 
-    boolean isRunning();
+    void write(SocketChannel socketChannel);
 
-    Socket getSocket();
-
-    void close() throws IOException;
 
 }

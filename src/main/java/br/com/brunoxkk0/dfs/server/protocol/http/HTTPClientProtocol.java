@@ -3,25 +3,28 @@ package br.com.brunoxkk0.dfs.server.protocol.http;
 import br.com.brunoxkk0.dfs.server.protocol.Protocol;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.Target;
+import br.com.brunoxkk0.dfs.server.protocol.http.handlers.SocketWriter;
 import br.com.brunoxkk0.dfs.server.protocol.http.handlers.StatusReply;
 import br.com.brunoxkk0.dfs.server.protocol.http.methods.GETHandler;
 import br.com.brunoxkk0.dfs.server.protocol.http.methods.HEADHandler;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.ReceivedContent;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
 import br.com.brunoxkk0.dfs.server.tcp.Server;
-import br.com.brunoxkk0.dfs.server.tcp.SocketClient;
+import lombok.Builder;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
+import java.util.Queue;
 
 import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.*;
 
+@Builder
 public class HTTPClientProtocol implements Protocol {
+
+    private final Queue<SocketWriter> toWrite = new LinkedList<>();
 
     @Override
     public String getName() {
@@ -29,123 +32,108 @@ public class HTTPClientProtocol implements Protocol {
     }
 
     @Override
-    public void run(SocketClient client) {
+    @SneakyThrows
+    public void read(ByteArrayOutputStream byteArrayOutputStream) {
+
+        LinkedList<String> inputContent = new LinkedList<>();
+
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+        BufferedInputStream bufferedInputStream = new BufferedInputStream(byteArrayInputStream);
+
+        String line;
+        while ((line = readLineImp(bufferedInputStream)) != null){
+
+            if(line.equals("\r\n"))
+                break;
+
+            inputContent.add(line);
+        }
+
+        if(inputContent.isEmpty()){
+
+            StatusReply statusReply = StatusReply
+                    .builder()
+                    .status(HTTPStatus.InternalServerError)
+                    .build();
+
+            toWrite.add(statusReply);
+            return;
+
+        }
+
+        Target target = Target.of(inputContent.get(0));
+        HeaderParameters headerParameters = HeaderParameters.of(inputContent);
 
         Logger logger = Server.getInstance().getLogger();
+        logTarget(logger, target);
+        logHeaderParameters(logger, headerParameters);
 
-        try {
+        ReceivedContent receivedContent = null;
 
-            BufferedInputStream inputStream = new BufferedInputStream(client.getInputStream());
-            BufferedOutputStream outputStream = new BufferedOutputStream(client.getOutputStream());
+        receiveContent: {
 
-            LinkedList<String> inputContent = new LinkedList<>();
+            if(!target.getMethodEnum().receiveContent())
+                break receiveContent;
 
-            String line;
-            while ((line = readLineImp(inputStream)) != null){
+            String contentLength = headerParameters.getParameters().getOrDefault("Content-Length", "-1");
+            int length = Integer.parseInt(contentLength);
 
-                if(line.equals("\r\n"))
-                    break;
+            if(length > 0){
 
-                inputContent.add(line);
-            }
+                String contentType = headerParameters.getParameters().get("Content-Type");
+                String contentDisposition = headerParameters.getParameters().get("Content-Disposition");
 
-            if(inputContent.isEmpty()){
+                if(length > MAX_READ_SIZE){
 
-                if(client.isConnected())
-                    StatusReply
-                            .builder()
-                            .status(HTTPStatus.InternalServerError)
-                            .build()
-                            .execute(outputStream);
+                    logger.warn(String.format(" ! Request content size is too large (Max: %d | Received: %d)", MAX_READ_SIZE, length));
 
-                client.close();
-                return;
-            }
-
-            Target target = Target.of(inputContent.get(0));
-            HeaderParameters headerParameters = HeaderParameters.of(inputContent);
-
-            logTarget(logger, target);
-            logHeaderParameters(logger, headerParameters);
-
-            ReceivedContent receivedContent = null;
-
-            receiveContent: {
-
-                if(!target.getMethodEnum().receiveContent())
-                    break receiveContent;
-
-                String contentLength = headerParameters.getParameters().getOrDefault("Content-Length", "-1");
-                int length = Integer.parseInt(contentLength);
-
-                if(length > 0){
-
-                    String contentType = headerParameters.getParameters().get("Content-Type");
-                    String contentDisposition = headerParameters.getParameters().get("Content-Disposition");
-
-                    if(length > MAX_READ_SIZE){
-
-                        logger.warn(String.format(" ! Request content size is too large (Max: %d | Received: %d)", MAX_READ_SIZE, length));
-
-                        StatusReply.builder()
-                                .status(HTTPStatus.PayloadTooLarge)
-                                .build()
-                                .execute(outputStream);
-
-                        client.close();
-
-                        return;
-                    }
-
-                    logger.info(" ! Content size is greater than zero, heading received body...");
-
-                    ByteArrayOutputStream byteDataArray = new ByteArrayOutputStream();
-
-                    int read = readReceivedInput(inputStream, length, byteDataArray);
-
-                    logger.info(" ! Read " + read + " bytes");
-
-                    receivedContent = ReceivedContent.builder()
-                            .data(byteDataArray)
-                            .contentType(contentType)
-                            .contentDisposition(contentDisposition)
+                    StatusReply statusReply = StatusReply.builder()
+                            .status(HTTPStatus.PayloadTooLarge)
                             .build();
-                }
 
-                if(receivedContent != null){
-                    logger.info(" ! Received Content: " + receivedContent);
-                }
-
-            }
-
-            client.getSocket().setKeepAlive(headerParameters.isKeepAlive());
-
-            switch (target.getMethodEnum()){
-
-                case GET ->     GETHandler.of(target, headerParameters).execute(outputStream);
-                case HEAD ->    HEADHandler.of(target, headerParameters).execute(outputStream);
-
-                default -> {
-
-                    StatusReply.builder()
-                            .status(HTTPStatus.NotImplemented)
-                            .build()
-                            .execute(outputStream);
-
-                    client.close();
+                    toWrite.add(statusReply);
                     return;
                 }
 
+                logger.info(" ! Content size is greater than zero, heading received body...");
+
+                ByteArrayOutputStream byteDataArray = new ByteArrayOutputStream();
+
+                int read = readReceivedInput(bufferedInputStream, length, byteDataArray);
+
+                logger.info(" ! Read " + read + " bytes");
+
+                receivedContent = ReceivedContent.builder()
+                        .data(byteDataArray)
+                        .contentType(contentType)
+                        .contentDisposition(contentDisposition)
+                        .build();
             }
 
-            outputStream.flush();
-
-            if(!headerParameters.isKeepAlive()){
-                client.close();
+            if(receivedContent != null){
+                logger.info(" ! Received Content: " + receivedContent);
             }
 
-        } catch (IOException e) {
-            e.printStackTrace();
+        }
+
+        SocketWriter socketWriter = switch (target.getMethodEnum()){
+
+            case GET ->  GETHandler.of(target, headerParameters);
+            case HEAD -> HEADHandler.of(target, headerParameters);
+            default -> StatusReply.builder().status(HTTPStatus.NotImplemented).build();
+
+        };
+
+        toWrite.add(socketWriter);
+    }
+
+    @Override
+    public void write(SocketChannel socketChannel) {
+
+        SocketWriter socketWriter = toWrite.poll();
+
+        if(socketWriter != null){
+            socketWriter.write(socketChannel);
         }
 
     }

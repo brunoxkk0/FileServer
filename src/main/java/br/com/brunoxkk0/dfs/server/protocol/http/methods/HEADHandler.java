@@ -3,11 +3,13 @@ package br.com.brunoxkk0.dfs.server.protocol.http.methods;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.Target;
 import br.com.brunoxkk0.dfs.server.protocol.http.handlers.ContentProvider;
+import br.com.brunoxkk0.dfs.server.protocol.http.handlers.SocketWriter;
 
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.nio.channels.SocketChannel;
 
-public class HEADHandler {
+public class HEADHandler implements SocketWriter {
 
     private final Target target;
     private final HeaderParameters headerParameters;
@@ -21,13 +23,12 @@ public class HEADHandler {
         return new HEADHandler(target, headerParameters);
     }
 
-    public void execute(BufferedOutputStream outputStream) throws IOException {
-        // O provider já sabe como lidar com o HEAD
+    @Override
+    public void write(SocketChannel socketChannel) {
         ContentProvider.builder()
                 .parameters(headerParameters)
                 .target(target)
                 .build()
-                .provide(outputStream);
+                .write(socketChannel);
     }
-
 }

@@ -17,7 +17,7 @@ public class HeaderParameters {
     private final HashMap<String,String> parameters = new HashMap<>();
 
     public boolean isKeepAlive(){
-        return parameters.getOrDefault("Connection", "null").equals("keep-alive");
+        return parameters.getOrDefault("Connection", "null").equalsIgnoreCase("keep-alive");
     }
 
     public static HeaderParameters of(String source){

@@ -1,18 +1,28 @@
 package br.com.brunoxkk0.dfs.server.tcp;
 
 import br.com.brunoxkk0.dfs.server.protocol.http.HTTPClientProtocol;
-import br.com.brunoxkk0.dfs.utils.IntervalParser;
+import lombok.Getter;
+import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
 
-import java.io.IOException;
-import java.net.ServerSocket;
+import java.io.ByteArrayOutputStream;
+import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-public class Server implements Runnable{
+import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.BUFFER_SIZE;
+
+@Getter
+public class Server{
 
     private static Server instance;
 
@@ -21,71 +31,122 @@ public class Server implements Runnable{
     }
 
     private final Logger logger = Logger.getLogger("Server");
+    private final HashMap<UUID, Client<?>> connectedClients = new HashMap<>();
+    private Selector selector;
 
-    public Logger getLogger() {
-        return logger;
-    }
+    private final InetSocketAddress address;
 
-    private ServerSocket serverSocket;
-    private int port = -1;
-    private final String possiblePorts;
-    private final ExecutorService connectionPool = Executors.newFixedThreadPool(10);
-
-
-    public Server(String possiblePorts){
+    public Server(int port){
         instance = this;
-        this.possiblePorts = possiblePorts;
+        address = new InetSocketAddress("localhost", port);
     }
 
-    public int getPort() {
-        return port;
-    }
-
-    public ServerSocket getServerSocket() {
-        return serverSocket;
-    }
-
+    @SneakyThrows
     public void createServer() {
 
-        Integer[] ports = IntervalParser.parseInterval(possiblePorts);
+        selector = Selector.open();
 
-        for(int p : ports){
+            ServerSocketChannel serverChannel = ServerSocketChannel.open();
+            serverChannel.configureBlocking(false);
+            serverChannel.socket().bind(address);
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
-            try{
-                serverSocket = new ServerSocket(p);
-                serverSocket.setSoTimeout(10000);
-                port = p;
-            }catch (IOException exception){
-                logger.info("Unable to bind port: " + p);
-                continue;
+            logger.info("Server was bind on port: " + address.getPort());
+
+            while (serverChannel.isOpen()){
+
+                int readyCount = selector.select();
+                if (readyCount == 0) {
+                    continue;
+                }
+
+                Set<SelectionKey> readyKeys = selector.selectedKeys();
+                Iterator<SelectionKey> iterator = readyKeys.iterator();
+
+                while (iterator.hasNext()) {
+
+                    SelectionKey key = iterator.next();
+
+                    iterator.remove();
+
+                    if (!key.isValid()) {
+                        continue;
+                    }
+
+                    if (key.isAcceptable()) { // Accept client connections
+                        acceptClient(key);
+                    } else if (key.isReadable()) { // Read from client
+                        readClient(key);
+                        writeClient(key);
+                    } else if (key.isWritable()) {
+                    }
+                }
             }
-
-            logger.info("Server was bind on port: " + p);
-            break;
-        }
-
 
     }
 
+    @SneakyThrows
+    private void acceptClient(SelectionKey key){
 
-    @Override
-    public void run() {
-        while (serverSocket.isBound()){
+        ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
 
-            try {
+        SocketChannel channel = serverChannel.accept();
+        channel.configureBlocking(false);
 
-                Socket socket = serverSocket.accept();
+        Socket socket = channel.socket();
+        SocketAddress socketAddress = socket.getRemoteSocketAddress();
 
-                Client<HTTPClientProtocol> client = new Client<>(UUID.randomUUID(), socket, new HTTPClientProtocol());
-                client.FUTURE = connectionPool.submit(client);
+        Client<HTTPClientProtocol> client = Client.<HTTPClientProtocol>builder()
+                .uuid(UUID.randomUUID())
+                .socketAddress(socketAddress)
+                .protocol(HTTPClientProtocol.builder().build())
+                .build();
 
+        channel.register(selector, SelectionKey.OP_READ, client.getUUID());
+        connectedClients.put(client.getUUID(), client);
 
-            } catch (Exception exception) {
+        logger.info(String.format("Client %s[%s] running on %s protocol", client.getUUID(), client.getSocketAddress(), client.getProtocol().getName()));
 
-                if(!(exception instanceof SocketTimeoutException)){
-                    exception.printStackTrace();
-                }
+    }
 
+    @SneakyThrows
+    private void readClient(SelectionKey key){
+
+        SocketChannel channel = (SocketChannel) key.channel();
+        ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+        int read;
+        while ((read = channel.read(buffer)) > 0){
+            buffer.flip();
+            byteArrayOutputStream.write(buffer.array(), 0, read);
+            buffer.clear();
+        }
+
+        if(key.attachment() != null){
+
+            UUID uuid = (UUID) key.attachment();
+            Client<?> client = connectedClients.get(uuid);
+
+            if(client != null){
+                client.read(byteArrayOutputStream);
+            }
+        }
+    }
+
+    @SneakyThrows
+    private void writeClient(SelectionKey key){
+
+        SocketChannel channel = (SocketChannel) key.channel();
+
+        if(key.attachment() != null){
+
+            UUID uuid = (UUID) key.attachment();
+            Client<?> client = connectedClients.get(uuid);
+
+            if(client != null){
+                client.write(channel);
             }
         }
     }

@@ -1,32 +1,28 @@
 package br.com.brunoxkk0.dfs.server.tcp;
 
 import br.com.brunoxkk0.dfs.server.protocol.Protocol;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.UUID;
-import java.util.concurrent.Future;
 
-public class Client <T extends Protocol> implements SocketClient {
+@Builder
+@AllArgsConstructor
+public class Client <T extends Protocol> implements SocketClient<T> {
 
     private final UUID uuid;
-    private final Socket socket;
-
-    public Future<?> FUTURE;
-
+    private final SocketAddress socketAddress;
     private final T protocol;
-
-    private BufferedInputStream bufferedInputStream;
-    private BufferedOutputStream bufferedOutputStream;
-
-    public Client(UUID uuid, Socket socket, T protocol){
-        this.uuid = uuid;
-        this.socket = socket;
-        this.protocol = protocol;
-    }
 
     @Override
     public UUID getUUID() {
@@ -34,84 +30,23 @@ public class Client <T extends Protocol> implements SocketClient {
     }
 
     @Override
-    public BufferedInputStream getInputStream() throws IOException {
-
-        if(bufferedInputStream != null){
-            return bufferedInputStream;
-        }
-
-        return (bufferedInputStream = new BufferedInputStream(socket.getInputStream()));
+    public SocketAddress getSocketAddress() {
+        return socketAddress;
     }
 
     @Override
-    public BufferedOutputStream getOutputStream() throws IOException {
-
-        if(bufferedOutputStream != null){
-            return bufferedOutputStream;
-        }
-
-        return (bufferedOutputStream = new BufferedOutputStream(socket.getOutputStream()));
+    public T getProtocol() {
+        return protocol;
     }
 
     @Override
-    public boolean isConnected() {
-        return socket.isConnected();
+    public void read(ByteArrayOutputStream readData) {
+        protocol.read(readData);
     }
 
     @Override
-    public boolean isRunning() {
-        return !FUTURE.isDone() && !FUTURE.isCancelled();
-    }
-
-    @Override
-    public Socket getSocket() {
-        return socket;
-    }
-
-    @Override
-    public void close() throws IOException {
-
-        if(socket != null && !socket.isClosed())
-            socket.close();
-
-        threadClose();
-    }
-
-    private void threadClose(){
-        if(isRunning())
-            FUTURE.cancel(true);
-    }
-
-    @Override
-    public void run() {
-
-        try {
-
-            if(protocol != null){
-
-                Server.getInstance().getLogger().info(String.format("Client %s[%s] running on %s protocol", uuid, socket.getInetAddress(), protocol.getName()));
-
-                do{
-                    protocol.run(this);
-                }while (socket.isConnected() && !socket.isClosed() && socket.getKeepAlive());
-
-            }
-
-            close();
-
-        } catch (Exception e) {
-
-            if(e instanceof SocketException){
-                Server.getInstance().getLogger().info(String.format("The client %s was closed", uuid), e);
-                return;
-            }
-
-            Server.getInstance().getLogger().error(String.format("Error on client %s", uuid), e);
-
-        }finally {
-            threadClose();
-        }
-
+    public void write(SocketChannel socketChannel) {
+        protocol.write(socketChannel);
     }
 
 }
