@@ -41,6 +41,10 @@ public class Server{
         address = new InetSocketAddress("localhost", port);
     }
 
+    public void registerClient(Client<?> client){
+        connectedClients.put(client.getUUID(), client);
+    }
+
     @SneakyThrows
     public void createServer() {
 
