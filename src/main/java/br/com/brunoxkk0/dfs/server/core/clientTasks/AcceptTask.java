@@ -27,6 +27,9 @@ public class AcceptTask implements ClientTask {
         ServerSocketChannel serverChannel = (ServerSocketChannel) selectionKey.channel();
         Server server = Server.getInstance();
 
+        if(!selectionKey.isAcceptable())
+            return;
+
         SocketChannel channel = serverChannel.accept();
         channel.configureBlocking(false);
 

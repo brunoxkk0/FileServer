@@ -12,15 +12,7 @@ public class ClientHandlingThread extends Thread{
     ));
 
     public ClientHandlingThread(Runnable runnable){
-
         super(runnable);
-
-//        BufferedThreadContext bufferedThreadContext = new BufferedThreadContext(
-//                this.getId(),
-//                ByteBuffer.allocate(ClientConfigHolder.BUFFER_SIZE)
-//        );
-//
-//        threadContext.set(bufferedThreadContext);
         this.setName("ClientHandlingThread - " + this.getId());
     }
 

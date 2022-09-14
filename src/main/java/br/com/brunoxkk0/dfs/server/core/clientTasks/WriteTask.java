@@ -3,41 +3,26 @@ package br.com.brunoxkk0.dfs.server.core.clientTasks;
 import br.com.brunoxkk0.dfs.server.core.TaskType;
 import br.com.brunoxkk0.dfs.server.tcp.Client;
 import br.com.brunoxkk0.dfs.server.tcp.Server;
-import lombok.SneakyThrows;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
-public class ReadTask implements ClientTask {
+public class WriteTask implements ClientTask{
 
     @Override
     public TaskType getTaskType() {
-        return TaskType.READ;
+        return TaskType.WRITE;
     }
 
     @Override
-    @SneakyThrows
     public void process(SelectionKey selectionKey) {
 
+        Server server = Server.getInstance();
         SocketChannel channel = (SocketChannel) selectionKey.channel();
 
-        if(!selectionKey.isReadable())
+        if(!selectionKey.isWritable())
             return;
-
-        ByteBuffer buffer = getThreadBuffer();
-        Server server = Server.getInstance();
-
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-        int read;
-        while ((read = channel.read(buffer)) > 0){
-            buffer.flip();
-            byteArrayOutputStream.write(buffer.array(), 0, read);
-            buffer.clear();
-        }
 
         if(selectionKey.attachment() != null){
 
@@ -45,12 +30,10 @@ public class ReadTask implements ClientTask {
             Client<?> client = server.getConnectedClients().get(uuid);
 
             if(client != null){
-                client.read(byteArrayOutputStream);
+                client.write(channel);
             }
         }
 
-        selectionKey.interestOps(SelectionKey.OP_WRITE);
-
+        selectionKey.interestOps(SelectionKey.OP_READ);
     }
-
 }

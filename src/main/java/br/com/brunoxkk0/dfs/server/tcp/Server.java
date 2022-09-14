@@ -1,8 +1,11 @@
 package br.com.brunoxkk0.dfs.server.tcp;
 
 import br.com.brunoxkk0.dfs.server.ClientConfigHolder;
+import br.com.brunoxkk0.dfs.server.core.TaskType;
 import br.com.brunoxkk0.dfs.server.core.clientTasks.AcceptTask;
+import br.com.brunoxkk0.dfs.server.core.clientTasks.ClientTask;
 import br.com.brunoxkk0.dfs.server.core.clientTasks.ReadTask;
+import br.com.brunoxkk0.dfs.server.core.clientTasks.WriteTask;
 import br.com.brunoxkk0.dfs.server.core.thread.ClientHandlingThread;
 import br.com.brunoxkk0.dfs.server.protocol.http.HTTPClientProtocol;
 import lombok.Getter;
@@ -85,19 +88,7 @@ public class Server{
                         continue;
                     }
 
-                    if (key.isAcceptable()) {
-                        clientHandlingPool.submit(() -> {
-                            new AcceptTask().process(key);
-                        });
-                        //acceptClient(key);
-                    } else if (key.isReadable()) {
-                        clientHandlingPool.submit(() -> {
-                            new ReadTask().process(key);
-                        });
-                        //readClient(key);
-                    } else if (key.isWritable()) {
-                        writeClient(key);
-                    }
+                    clientHandlingPool.submit(createTask(key));
 
                     if(!key.channel().isOpen()){
                         if(key.attachment() != null)
@@ -106,6 +97,27 @@ public class Server{
                 }
             }
         }
+    }
+
+    private Runnable createTask(SelectionKey selectionKey){
+
+        return () -> {
+
+            TaskType type = (selectionKey.isAcceptable()) ? TaskType.ACCEPT : (selectionKey.isReadable()) ? TaskType.READ : TaskType.WRITE;
+
+            ClientTask clientTask = switch (type){
+                case ACCEPT -> new AcceptTask();
+                case READ -> new ReadTask();
+                case WRITE -> new WriteTask();
+            };
+
+            if(type != clientTask.getTaskType()){
+                clientHandlingPool.submit(createTask(selectionKey));
+                return;
+            }
+
+            clientTask.process(selectionKey);
+        };
     }
 
     @SneakyThrows
