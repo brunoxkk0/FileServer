@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.dfs.server.core;
+package br.com.brunoxkk0.dfs.server.core.thread;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 @Getter
 public class BufferedThreadContext {
 
-    private int ID;
+    private long ID;
     private ByteBuffer byteBuffer;
 
 }

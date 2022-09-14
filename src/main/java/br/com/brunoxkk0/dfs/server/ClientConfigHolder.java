@@ -9,6 +9,7 @@ public class ClientConfigHolder {
     public static final String LINE_BREAK = "\r\n";
 
     public static final int BUFFER_SIZE = 4096;
+    public static final int THREAD_POOL_SIZE = 4;
 
     public static String sourceFolder = "/provider/public";
     public static String defaultExpectedFile = "index.html";

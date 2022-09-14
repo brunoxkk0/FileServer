@@ -1,6 +1,5 @@
 package br.com.brunoxkk0.dfs.server.core.clientTasks;
 
-import br.com.brunoxkk0.dfs.server.core.ClientTask;
 import br.com.brunoxkk0.dfs.server.core.TaskType;
 import br.com.brunoxkk0.dfs.server.protocol.http.HTTPClientProtocol;
 import br.com.brunoxkk0.dfs.server.tcp.Client;

@@ -1,7 +1,5 @@
 package br.com.brunoxkk0.dfs.server.core.clientTasks;
 
-import br.com.brunoxkk0.dfs.server.core.BufferedThreadContext;
-import br.com.brunoxkk0.dfs.server.core.ClientTask;
 import br.com.brunoxkk0.dfs.server.core.TaskType;
 import br.com.brunoxkk0.dfs.server.tcp.Client;
 import br.com.brunoxkk0.dfs.server.tcp.Server;
@@ -27,7 +25,8 @@ public class ReadTask implements ClientTask {
     public void process(SelectionKey selectionKey) {
 
         SocketChannel channel = (SocketChannel) selectionKey.channel();
-        ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+
+        ByteBuffer buffer = getThreadBuffer();
         Server server = Server.getInstance();
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();

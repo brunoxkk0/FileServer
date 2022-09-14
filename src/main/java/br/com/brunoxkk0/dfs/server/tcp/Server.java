@@ -1,5 +1,9 @@
 package br.com.brunoxkk0.dfs.server.tcp;
 
+import br.com.brunoxkk0.dfs.server.ClientConfigHolder;
+import br.com.brunoxkk0.dfs.server.core.clientTasks.AcceptTask;
+import br.com.brunoxkk0.dfs.server.core.clientTasks.ReadTask;
+import br.com.brunoxkk0.dfs.server.core.thread.ClientHandlingThread;
 import br.com.brunoxkk0.dfs.server.protocol.http.HTTPClientProtocol;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -18,6 +22,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.BUFFER_SIZE;
 
@@ -33,8 +39,9 @@ public class Server{
     private final Logger logger = Logger.getLogger("Server");
     private final HashMap<UUID, Client<?>> connectedClients = new HashMap<>();
     private Selector selector;
-
     private final InetSocketAddress address;
+
+    public ThreadPoolExecutor clientHandlingPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(ClientConfigHolder.THREAD_POOL_SIZE, el -> new ClientHandlingThread(el));
 
     public Server(int port){
         instance = this;
@@ -79,9 +86,15 @@ public class Server{
                     }
 
                     if (key.isAcceptable()) {
-                        acceptClient(key);
+                        clientHandlingPool.submit(() -> {
+                            new AcceptTask().process(key);
+                        });
+                        //acceptClient(key);
                     } else if (key.isReadable()) {
-                        readClient(key);
+                        clientHandlingPool.submit(() -> {
+                            new ReadTask().process(key);
+                        });
+                        //readClient(key);
                     } else if (key.isWritable()) {
                         writeClient(key);
                     }
