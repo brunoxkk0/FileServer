@@ -4,11 +4,16 @@ import br.com.brunoxkk0.dfs.server.core.TaskType;
 import br.com.brunoxkk0.dfs.server.tcp.Client;
 import br.com.brunoxkk0.dfs.server.tcp.Server;
 
+import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
-public class WriteTask implements ClientTask{
+public class WriteTask extends ClientTask {
+
+    public WriteTask(SelectionKey key) {
+        super(key);
+    }
 
     @Override
     public TaskType getTaskType() {
@@ -30,10 +35,25 @@ public class WriteTask implements ClientTask{
             Client<?> client = server.getConnectedClients().get(uuid);
 
             if(client != null){
-                client.write(channel);
+
+                if(selectionKey.isValid()){
+                    try{
+                        client.write(channel);
+                    } catch (IOException e) {
+                        Server.getInstance().getLogger().trace(e);
+                    } finally {
+                        Server.getInstance().getConnectedClients().remove(uuid);
+                        try{
+                            selectionKey.channel().close();
+                        } catch (IOException e) {
+                            Server.getInstance().getLogger().trace(e);
+                        }
+                    }
+                }
             }
         }
 
-        selectionKey.interestOps(SelectionKey.OP_READ);
+        if(selectionKey.isValid())
+            selectionKey.interestOps(SelectionKey.OP_READ);
     }
 }

@@ -8,9 +8,11 @@ import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.MIMEType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.SneakyThrows;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -113,8 +115,7 @@ public class ContentProvider implements SocketWriter {
 
 
     @Override
-    @SneakyThrows
-    public void write(SocketChannel socketChannel) {
+    public void write(SocketChannel socketChannel) throws IOException {
         provide(socketChannel);
     }
 }

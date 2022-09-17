@@ -1,37 +1,30 @@
 package br.com.brunoxkk0.dfs.server.tcp;
 
-import br.com.brunoxkk0.dfs.server.ClientConfigHolder;
 import br.com.brunoxkk0.dfs.server.core.TaskType;
 import br.com.brunoxkk0.dfs.server.core.clientTasks.AcceptTask;
 import br.com.brunoxkk0.dfs.server.core.clientTasks.ClientTask;
 import br.com.brunoxkk0.dfs.server.core.clientTasks.ReadTask;
 import br.com.brunoxkk0.dfs.server.core.clientTasks.WriteTask;
-import br.com.brunoxkk0.dfs.server.core.thread.ClientHandlingThread;
 import br.com.brunoxkk0.dfs.server.protocol.http.HTTPClientProtocol;
+import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
 
-import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.BUFFER_SIZE;
 
 @Getter
-public class Server{
+public class Server {
 
     private static Server instance;
 
@@ -43,15 +36,15 @@ public class Server{
     private final HashMap<UUID, Client<?>> connectedClients = new HashMap<>();
     private Selector selector;
     private final InetSocketAddress address;
+    private final ByteBuffer SERVER_BUFFER = ByteBuffer.allocate(BUFFER_SIZE);
 
-    public ThreadPoolExecutor clientHandlingPool = (ThreadPoolExecutor) Executors.newFixedThreadPool(ClientConfigHolder.THREAD_POOL_SIZE, el -> new ClientHandlingThread(el));
 
-    public Server(int port){
+    public Server(int port) {
         instance = this;
         address = new InetSocketAddress("localhost", port);
     }
 
-    public void registerClient(Client<?> client){
+    public void registerClient(Client<?> client) {
         connectedClients.put(client.getUUID(), client);
     }
 
@@ -63,7 +56,7 @@ public class Server{
         try (ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
 
             serverChannel.configureBlocking(false);
-            serverChannel.socket().bind(address);
+            serverChannel.bind(address);
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
 
             logger.info("Server was bind on port: " + address.getPort());
@@ -85,13 +78,36 @@ public class Server{
                     iterator.remove();
 
                     if (!key.isValid()) {
+
+                        if (key.attachment() != null)
+                            connectedClients.remove((UUID) key.attachment());
+
                         continue;
                     }
 
-                    clientHandlingPool.submit(createTask(key));
+                    ClientTask task = createTask(key);
+                    task.execute();
 
-                    if(!key.channel().isOpen()){
-                        if(key.attachment() != null)
+                    if (task.getTaskType() == TaskType.WRITE) {
+                        if (key.attachment() != null) {
+                            Client<?> client = connectedClients.get((UUID) key.attachment());
+                            if (client != null && client.getProtocol() instanceof HTTPClientProtocol) {
+                                HeaderParameters headerParameters = ((HTTPClientProtocol) client.getProtocol()).getLastHeaderParameters();
+
+                                if (headerParameters != null) {
+                                    if (!headerParameters.isKeepAlive()) {
+                                        key.channel().close();
+                                        connectedClients.remove((UUID) key.attachment());
+                                        return;
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+
+                    if (!key.channel().isOpen()) {
+                        if (key.attachment() != null)
                             connectedClients.remove((UUID) key.attachment());
                     }
                 }
@@ -99,95 +115,15 @@ public class Server{
         }
     }
 
-    private Runnable createTask(SelectionKey selectionKey){
+    private ClientTask createTask(SelectionKey selectionKey) {
 
-        return () -> {
+        TaskType type = (selectionKey.isAcceptable()) ? TaskType.ACCEPT : (selectionKey.isReadable()) ? TaskType.READ : TaskType.WRITE;
 
-            TaskType type = (selectionKey.isAcceptable()) ? TaskType.ACCEPT : (selectionKey.isReadable()) ? TaskType.READ : TaskType.WRITE;
-
-            ClientTask clientTask = switch (type){
-                case ACCEPT -> new AcceptTask();
-                case READ -> new ReadTask();
-                case WRITE -> new WriteTask();
-            };
-
-            if(type != clientTask.getTaskType()){
-                clientHandlingPool.submit(createTask(selectionKey));
-                return;
-            }
-
-            clientTask.process(selectionKey);
+        return switch (type) {
+            case ACCEPT -> new AcceptTask(selectionKey);
+            case READ -> new ReadTask(selectionKey);
+            case WRITE -> new WriteTask(selectionKey);
         };
-    }
-
-    @SneakyThrows
-    private void acceptClient(SelectionKey key){
-
-        ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
-
-        SocketChannel channel = serverChannel.accept();
-        channel.configureBlocking(false);
-
-        Socket socket = channel.socket();
-        SocketAddress socketAddress = socket.getRemoteSocketAddress();
-
-        Client<HTTPClientProtocol> client = Client.<HTTPClientProtocol>builder()
-                .uuid(UUID.randomUUID())
-                .socketAddress(socketAddress)
-                .protocol(HTTPClientProtocol.builder().build())
-                .build();
-
-        channel.register(selector, SelectionKey.OP_READ, client.getUUID());
-        connectedClients.put(client.getUUID(), client);
-
-        logger.info(String.format("Client %s[%s] running on %s protocol", client.getUUID(), client.getSocketAddress(), client.getProtocol().getName()));
-
-    }
-
-    @SneakyThrows
-    private void readClient(SelectionKey key){
-
-        SocketChannel channel = (SocketChannel) key.channel();
-        ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-        int read;
-        while ((read = channel.read(buffer)) > 0){
-            buffer.flip();
-            byteArrayOutputStream.write(buffer.array(), 0, read);
-            buffer.clear();
-        }
-
-        if(key.attachment() != null){
-
-            UUID uuid = (UUID) key.attachment();
-            Client<?> client = connectedClients.get(uuid);
-
-            if(client != null){
-                client.read(byteArrayOutputStream);
-            }
-        }
-
-        key.interestOps(SelectionKey.OP_WRITE);
-    }
-
-    @SneakyThrows
-    private void writeClient(SelectionKey key){
-
-        SocketChannel channel = (SocketChannel) key.channel();
-
-        if(key.attachment() != null){
-
-            UUID uuid = (UUID) key.attachment();
-            Client<?> client = connectedClients.get(uuid);
-
-            if(client != null){
-                client.write(channel);
-            }
-        }
-
-        key.interestOps(SelectionKey.OP_READ);
     }
 
 }

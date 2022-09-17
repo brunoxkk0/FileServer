@@ -1,32 +1,23 @@
 package br.com.brunoxkk0.dfs.server.core.clientTasks;
 
 import br.com.brunoxkk0.dfs.server.core.TaskType;
-import br.com.brunoxkk0.dfs.server.core.thread.BufferedThreadContext;
-import br.com.brunoxkk0.dfs.server.core.thread.ClientHandlingThread;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 
-public interface ClientTask {
+public abstract class ClientTask {
 
-    default ByteBuffer getThreadBuffer(){
+    private final SelectionKey key;
 
-        if(ClientHandlingThread.getTextContext() != null)
-            return ClientHandlingThread.getTextContext().getByteBuffer().clear();
-
-        return null;
+    public ClientTask(SelectionKey key){
+        this.key = key;
     }
 
-    default BufferedThreadContext getThreadContext(){
+    public abstract TaskType getTaskType();
 
-        if(ClientHandlingThread.getTextContext() != null)
-            return ClientHandlingThread.getTextContext();
+    abstract void process(SelectionKey selectionKey);
 
-        return null;
+    public void execute(){
+        process(key);
     }
-
-    TaskType getTaskType();
-
-    void process(SelectionKey selectionKey);
 
 }

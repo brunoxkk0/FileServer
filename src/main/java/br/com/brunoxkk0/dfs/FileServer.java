@@ -7,10 +7,6 @@ public class FileServer {
     public static void main(String[] args) {
         Server server = new Server(25565);
         server.createServer();
-
-        //Thread thread = new Thread(server);
-        //thread.start();
-
     }
 
 }

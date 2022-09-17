@@ -13,7 +13,11 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
-public class AcceptTask implements ClientTask {
+public class AcceptTask extends ClientTask {
+
+    public AcceptTask(SelectionKey key) {
+        super(key);
+    }
 
     @Override
     public TaskType getTaskType() {

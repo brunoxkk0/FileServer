@@ -11,7 +11,11 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
-public class ReadTask implements ClientTask {
+public class ReadTask extends ClientTask {
+
+    public ReadTask(SelectionKey key) {
+        super(key);
+    }
 
     @Override
     public TaskType getTaskType() {
@@ -27,8 +31,8 @@ public class ReadTask implements ClientTask {
         if(!selectionKey.isReadable())
             return;
 
-        ByteBuffer buffer = getThreadBuffer();
         Server server = Server.getInstance();
+        ByteBuffer buffer = server.getSERVER_BUFFER();
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
@@ -49,7 +53,8 @@ public class ReadTask implements ClientTask {
             }
         }
 
-        selectionKey.interestOps(SelectionKey.OP_WRITE);
+        if(selectionKey.isValid())
+            selectionKey.interestOps(SelectionKey.OP_WRITE);
 
     }
 

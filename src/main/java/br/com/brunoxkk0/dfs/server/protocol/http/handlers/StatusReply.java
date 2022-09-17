@@ -5,9 +5,7 @@ import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.MIMEType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.SneakyThrows;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -17,7 +15,7 @@ import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.LINE_BREAK;
 import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.PROTOCOL;
 
 @AllArgsConstructor
-@Builder()
+@Builder
 public class StatusReply implements SocketWriter {
 
     private final HTTPStatus status;
@@ -39,8 +37,7 @@ public class StatusReply implements SocketWriter {
     }
 
     @Override
-    @SneakyThrows
-    public void write(SocketChannel socketChannel) {
+    public void write(SocketChannel socketChannel) throws IOException {
         dispatch(socketChannel, Header.builder().build(), status);
     }
 }

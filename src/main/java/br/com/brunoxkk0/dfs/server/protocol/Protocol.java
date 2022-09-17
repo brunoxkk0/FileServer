@@ -1,6 +1,7 @@
 package br.com.brunoxkk0.dfs.server.protocol;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
 public interface Protocol {
@@ -9,6 +10,6 @@ public interface Protocol {
 
     void read(ByteArrayOutputStream byteArrayOutputStream);
 
-    void write(SocketChannel socketChannel);
+    void write(SocketChannel socketChannel) throws IOException;
 
 }

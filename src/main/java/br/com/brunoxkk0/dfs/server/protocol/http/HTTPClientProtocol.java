@@ -11,6 +11,7 @@ import br.com.brunoxkk0.dfs.server.protocol.http.core.ReceivedContent;
 import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
 import br.com.brunoxkk0.dfs.server.tcp.Server;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
 
@@ -26,6 +27,11 @@ public class HTTPClientProtocol implements Protocol {
 
     private final Queue<SocketWriter> toWrite = new LinkedList<>();
     private boolean isKeepAlive;
+
+    @Getter
+    private Target lastTarget;
+    @Getter
+    private HeaderParameters lastHeaderParameters;
 
     @Override
     public String getName() {
@@ -63,8 +69,8 @@ public class HTTPClientProtocol implements Protocol {
 
         }
 
-        Target target = Target.of(inputContent.get(0));
-        HeaderParameters headerParameters = HeaderParameters.of(inputContent);
+        Target target = lastTarget = Target.of(inputContent.get(0));
+        HeaderParameters headerParameters = lastHeaderParameters = HeaderParameters.of(inputContent);
 
         isKeepAlive = headerParameters.isKeepAlive();
 
@@ -132,8 +138,7 @@ public class HTTPClientProtocol implements Protocol {
     }
 
     @Override
-    @SneakyThrows
-    public void write(SocketChannel socketChannel) {
+    public void write(SocketChannel socketChannel) throws IOException {
 
         SocketWriter socketWriter = toWrite.poll();
 

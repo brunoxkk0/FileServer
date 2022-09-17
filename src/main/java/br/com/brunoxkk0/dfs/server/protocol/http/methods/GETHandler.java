@@ -1,11 +1,10 @@
 package br.com.brunoxkk0.dfs.server.protocol.http.methods;
 
 import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
-import br.com.brunoxkk0.dfs.server.protocol.http.handlers.ContentProvider;
 import br.com.brunoxkk0.dfs.server.protocol.http.core.Target;
+import br.com.brunoxkk0.dfs.server.protocol.http.handlers.ContentProvider;
 import br.com.brunoxkk0.dfs.server.protocol.http.handlers.SocketWriter;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
@@ -24,7 +23,7 @@ public class GETHandler implements SocketWriter {
     }
 
     @Override
-    public void write(SocketChannel socketChannel) {
+    public void write(SocketChannel socketChannel) throws IOException {
         ContentProvider.builder().parameters(headerParameters).target(target).build().write(socketChannel);
     }
 }
