@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.dfs.server.core;
+package br.dev.brunoxkk0.dfs.server.core;
 
 public enum TaskType {
     ACCEPT,

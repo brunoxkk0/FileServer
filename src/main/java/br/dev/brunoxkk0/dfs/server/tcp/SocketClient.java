@@ -1,6 +1,6 @@
-package br.com.brunoxkk0.dfs.server.tcp;
+package br.dev.brunoxkk0.dfs.server.tcp;
 
-import br.com.brunoxkk0.dfs.server.protocol.Protocol;
+import br.dev.brunoxkk0.dfs.server.protocol.Protocol;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

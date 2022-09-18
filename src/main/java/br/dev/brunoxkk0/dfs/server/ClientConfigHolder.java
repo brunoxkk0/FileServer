@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.dfs.server;
+package br.dev.brunoxkk0.dfs.server;
 
 import java.nio.charset.StandardCharsets;
 

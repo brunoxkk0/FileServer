@@ -1,12 +1,13 @@
-package br.com.brunoxkk0.dfs.server.tcp;
+package br.dev.brunoxkk0.dfs.server.tcp;
 
-import br.com.brunoxkk0.dfs.server.core.TaskType;
-import br.com.brunoxkk0.dfs.server.core.clientTasks.AcceptTask;
-import br.com.brunoxkk0.dfs.server.core.clientTasks.ClientTask;
-import br.com.brunoxkk0.dfs.server.core.clientTasks.ReadTask;
-import br.com.brunoxkk0.dfs.server.core.clientTasks.WriteTask;
-import br.com.brunoxkk0.dfs.server.protocol.http.HTTPClientProtocol;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
+import br.dev.brunoxkk0.dfs.server.core.TaskType;
+import br.dev.brunoxkk0.dfs.server.core.clientTasks.AcceptTask;
+import br.dev.brunoxkk0.dfs.server.core.clientTasks.ClientTask;
+import br.dev.brunoxkk0.dfs.server.core.clientTasks.ReadTask;
+import br.dev.brunoxkk0.dfs.server.core.clientTasks.WriteTask;
+import br.dev.brunoxkk0.dfs.server.protocol.http.HTTPClientProtocol;
+import br.dev.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
+import br.dev.brunoxkk0.dfs.server.ClientConfigHolder;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.log4j.Logger;
@@ -21,8 +22,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.UUID;
 
-import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.BUFFER_SIZE;
-
 @Getter
 public class Server {
 
@@ -36,7 +35,7 @@ public class Server {
     private final HashMap<UUID, Client<?>> connectedClients = new HashMap<>();
     private Selector selector;
     private final InetSocketAddress address;
-    private final ByteBuffer SERVER_BUFFER = ByteBuffer.allocate(BUFFER_SIZE);
+    private final ByteBuffer SERVER_BUFFER = ByteBuffer.allocate(ClientConfigHolder.BUFFER_SIZE);
 
 
     public Server(int port) {

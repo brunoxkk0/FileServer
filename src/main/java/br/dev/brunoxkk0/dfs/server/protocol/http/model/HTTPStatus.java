@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.dfs.server.protocol.http.model;
+package br.dev.brunoxkk0.dfs.server.protocol.http.model;
 
 public class HTTPStatus {
 

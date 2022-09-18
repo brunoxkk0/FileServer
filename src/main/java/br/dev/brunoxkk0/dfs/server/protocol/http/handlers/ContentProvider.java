@@ -1,11 +1,12 @@
-package br.com.brunoxkk0.dfs.server.protocol.http.handlers;
+package br.dev.brunoxkk0.dfs.server.protocol.http.handlers;
 
-import br.com.brunoxkk0.dfs.server.protocol.http.core.Header;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.Target;
-import br.com.brunoxkk0.dfs.server.protocol.http.methods.HTTPMethods;
-import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
-import br.com.brunoxkk0.dfs.server.protocol.http.model.MIMEType;
+import br.dev.brunoxkk0.dfs.server.protocol.http.core.Header;
+import br.dev.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
+import br.dev.brunoxkk0.dfs.server.protocol.http.core.Target;
+import br.dev.brunoxkk0.dfs.server.protocol.http.methods.HTTPMethods;
+import br.dev.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
+import br.dev.brunoxkk0.dfs.server.protocol.http.model.MIMEType;
+import br.dev.brunoxkk0.dfs.server.ClientConfigHolder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 
@@ -19,8 +20,6 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
-import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.*;
-
 @AllArgsConstructor
 @Builder
 public class ContentProvider implements SocketWriter {
@@ -32,17 +31,17 @@ public class ContentProvider implements SocketWriter {
 
         Header httpHeader = Header.builder().build();
 
-        String path = sourceFolder;
+        String path = ClientConfigHolder.sourceFolder;
 
         if(!target.getPath().equals("/"))
             path += target.getPath();
         else
-            path += "/" + defaultExpectedFile;
+            path += "/" + ClientConfigHolder.defaultExpectedFile;
 
         if(path.startsWith("/"))
             path = path.substring(1);
 
-        String decodedPath = URLDecoder.decode(path, DEFAULT_SERVER_CHARSET);
+        String decodedPath = URLDecoder.decode(path, ClientConfigHolder.DEFAULT_SERVER_CHARSET);
 
         File file = new File(decodedPath);
         String fileExtension = fileExtension(file);
@@ -61,18 +60,18 @@ public class ContentProvider implements SocketWriter {
             return;
         }
 
-        httpHeader.append(PROTOCOL, HTTPStatus.Ok, LINE_BREAK);
-        httpHeader.append("Date:", new Date(), LINE_BREAK);
-        httpHeader.append("Server:", SERVICE_NAME, LINE_BREAK);
+        httpHeader.append(ClientConfigHolder.PROTOCOL, HTTPStatus.Ok, ClientConfigHolder.LINE_BREAK);
+        httpHeader.append("Date:", new Date(), ClientConfigHolder.LINE_BREAK);
+        httpHeader.append("Server:", ClientConfigHolder.SERVICE_NAME, ClientConfigHolder.LINE_BREAK);
 
         String Mime = MIMEType.of(fileExtension);
 
-        if(Mime.startsWith("text") && FORCE_CHARSET_WHEN_TEXT)
-            Mime += "; charset=" + DEFAULT_SERVER_CHARSET;
+        if(Mime.startsWith("text") && ClientConfigHolder.FORCE_CHARSET_WHEN_TEXT)
+            Mime += "; charset=" + ClientConfigHolder.DEFAULT_SERVER_CHARSET;
 
-        httpHeader.append("Content-Type:", Mime, LINE_BREAK);
-        httpHeader.append("Content-Length:", file.length(), LINE_BREAK);
-        httpHeader.append(LINE_BREAK);
+        httpHeader.append("Content-Type:", Mime, ClientConfigHolder.LINE_BREAK);
+        httpHeader.append("Content-Length:", file.length(), ClientConfigHolder.LINE_BREAK);
+        httpHeader.append(ClientConfigHolder.LINE_BREAK);
 
         for(String line : httpHeader.getLines()){
             socketChannel.write(ByteBuffer.wrap(line.getBytes(StandardCharsets.UTF_8)));
@@ -93,7 +92,7 @@ public class ContentProvider implements SocketWriter {
 
         try(BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(file))){
 
-            byte[] buffer = new byte[BUFFER_SIZE];
+            byte[] buffer = new byte[ClientConfigHolder.BUFFER_SIZE];
 
             int n;
             while ((n = bufferedInputStream.read(buffer)) > 0){

@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.dfs.server.protocol.http.core;
+package br.dev.brunoxkk0.dfs.server.protocol.http.core;
 
 import lombok.Builder;
 import lombok.Data;

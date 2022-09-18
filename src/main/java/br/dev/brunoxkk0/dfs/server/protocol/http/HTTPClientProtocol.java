@@ -1,15 +1,16 @@
-package br.com.brunoxkk0.dfs.server.protocol.http;
+package br.dev.brunoxkk0.dfs.server.protocol.http;
 
-import br.com.brunoxkk0.dfs.server.protocol.Protocol;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.Target;
-import br.com.brunoxkk0.dfs.server.protocol.http.handlers.SocketWriter;
-import br.com.brunoxkk0.dfs.server.protocol.http.handlers.StatusReply;
-import br.com.brunoxkk0.dfs.server.protocol.http.methods.GETHandler;
-import br.com.brunoxkk0.dfs.server.protocol.http.methods.HEADHandler;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.ReceivedContent;
-import br.com.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
-import br.com.brunoxkk0.dfs.server.tcp.Server;
+import br.dev.brunoxkk0.dfs.server.protocol.Protocol;
+import br.dev.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
+import br.dev.brunoxkk0.dfs.server.protocol.http.core.Target;
+import br.dev.brunoxkk0.dfs.server.protocol.http.handlers.SocketWriter;
+import br.dev.brunoxkk0.dfs.server.protocol.http.handlers.StatusReply;
+import br.dev.brunoxkk0.dfs.server.protocol.http.methods.GETHandler;
+import br.dev.brunoxkk0.dfs.server.protocol.http.methods.HEADHandler;
+import br.dev.brunoxkk0.dfs.server.protocol.http.core.ReceivedContent;
+import br.dev.brunoxkk0.dfs.server.protocol.http.model.HTTPStatus;
+import br.dev.brunoxkk0.dfs.server.tcp.Server;
+import br.dev.brunoxkk0.dfs.server.ClientConfigHolder;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -19,8 +20,6 @@ import java.io.*;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.Queue;
-
-import static br.com.brunoxkk0.dfs.server.ClientConfigHolder.*;
 
 @Builder
 public class HTTPClientProtocol implements Protocol {
@@ -93,9 +92,9 @@ public class HTTPClientProtocol implements Protocol {
                 String contentType = headerParameters.getParameters().get("Content-Type");
                 String contentDisposition = headerParameters.getParameters().get("Content-Disposition");
 
-                if(length > MAX_READ_SIZE){
+                if(length > ClientConfigHolder.MAX_READ_SIZE){
 
-                    logger.warn(String.format(" ! Request content size is too large (Max: %d | Received: %d)", MAX_READ_SIZE, length));
+                    logger.warn(String.format(" ! Request content size is too large (Max: %d | Received: %d)", ClientConfigHolder.MAX_READ_SIZE, length));
 
                     StatusReply statusReply = StatusReply.builder()
                             .status(HTTPStatus.PayloadTooLarge)
@@ -155,7 +154,7 @@ public class HTTPClientProtocol implements Protocol {
     @SneakyThrows
     private static int readReceivedInput(BufferedInputStream inputStream, int length, ByteArrayOutputStream byteDataArray){
 
-        byte[] bytes = new byte[BUFFER_SIZE];
+        byte[] bytes = new byte[ClientConfigHolder.BUFFER_SIZE];
 
         int toRead = Math.min(length, bytes.length);
 
@@ -172,7 +171,7 @@ public class HTTPClientProtocol implements Protocol {
     }
 
     private static void logHeaderParameters(Logger logger, HeaderParameters headerParameters) {
-        if(DEBUG_MODE){
+        if(ClientConfigHolder.DEBUG_MODE){
             logger.info("+--- Header Parameters");
             headerParameters.getParameters().forEach(
                     (key, value) -> logger.info("|  " + key + ": " + value)

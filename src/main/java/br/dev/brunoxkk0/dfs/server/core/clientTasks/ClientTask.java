@@ -1,6 +1,6 @@
-package br.com.brunoxkk0.dfs.server.core.clientTasks;
+package br.dev.brunoxkk0.dfs.server.core.clientTasks;
 
-import br.com.brunoxkk0.dfs.server.core.TaskType;
+import br.dev.brunoxkk0.dfs.server.core.TaskType;
 
 import java.nio.channels.SelectionKey;
 

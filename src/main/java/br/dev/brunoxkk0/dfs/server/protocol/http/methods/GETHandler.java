@@ -1,9 +1,9 @@
-package br.com.brunoxkk0.dfs.server.protocol.http.methods;
+package br.dev.brunoxkk0.dfs.server.protocol.http.methods;
 
-import br.com.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
-import br.com.brunoxkk0.dfs.server.protocol.http.core.Target;
-import br.com.brunoxkk0.dfs.server.protocol.http.handlers.ContentProvider;
-import br.com.brunoxkk0.dfs.server.protocol.http.handlers.SocketWriter;
+import br.dev.brunoxkk0.dfs.server.protocol.http.core.HeaderParameters;
+import br.dev.brunoxkk0.dfs.server.protocol.http.core.Target;
+import br.dev.brunoxkk0.dfs.server.protocol.http.handlers.ContentProvider;
+import br.dev.brunoxkk0.dfs.server.protocol.http.handlers.SocketWriter;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;

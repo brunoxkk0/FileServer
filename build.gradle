@@ -3,7 +3,7 @@ plugins {
     id 'application'
 }
 
-group 'br.com.brunoxkk0'
+group 'br.dev.brunoxkk0'
 version '1.0-SNAPSHOT'
 
 repositories {

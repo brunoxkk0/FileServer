@@ -1,8 +1,8 @@
-package br.com.brunoxkk0.dfs.server.core.clientTasks;
+package br.dev.brunoxkk0.dfs.server.core.clientTasks;
 
-import br.com.brunoxkk0.dfs.server.core.TaskType;
-import br.com.brunoxkk0.dfs.server.tcp.Client;
-import br.com.brunoxkk0.dfs.server.tcp.Server;
+import br.dev.brunoxkk0.dfs.server.core.TaskType;
+import br.dev.brunoxkk0.dfs.server.tcp.Client;
+import br.dev.brunoxkk0.dfs.server.tcp.Server;
 import lombok.SneakyThrows;
 
 import java.io.ByteArrayOutputStream;

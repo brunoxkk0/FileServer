@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.dfs.server.protocol;
+package br.dev.brunoxkk0.dfs.server.protocol;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

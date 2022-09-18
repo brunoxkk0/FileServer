@@ -1,6 +1,6 @@
-package br.com.brunoxkk0.dfs.server.protocol.http.core;
+package br.dev.brunoxkk0.dfs.server.protocol.http.core;
 
-import br.com.brunoxkk0.dfs.server.protocol.http.methods.HTTPMethods;
+import br.dev.brunoxkk0.dfs.server.protocol.http.methods.HTTPMethods;
 import lombok.Getter;
 import lombok.ToString;
 

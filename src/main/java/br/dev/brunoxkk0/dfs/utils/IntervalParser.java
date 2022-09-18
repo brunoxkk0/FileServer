@@ -1,4 +1,4 @@
-package br.com.brunoxkk0.dfs.utils;
+package br.dev.brunoxkk0.dfs.utils;
 
 import java.util.HashSet;
 import java.util.Set;

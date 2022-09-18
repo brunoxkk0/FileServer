@@ -1,6 +1,6 @@
-package br.com.brunoxkk0.dfs;
+package br.dev.brunoxkk0.dfs;
 
-import br.com.brunoxkk0.dfs.server.tcp.Server;
+import br.dev.brunoxkk0.dfs.server.tcp.Server;
 
 public class FileServer {
 
